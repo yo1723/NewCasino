@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Juego de Azar</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  overflow:hidden;
+  background:#111;
+}
+
+/* INICIO */
+#inicio{
+  position:fixed;
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:20;
+  background:url("fondo.jpg");
+  background-size:cover;
+  background-position:center;
+  transition:all 1.2s ease;
+}
+
+#inicio::before{
+  content:"";
+  position:absolute;
+  width:100%;
+  height:100%;
+  backdrop-filter: blur(6px);
+  background:rgba(0,0,0,0.35);
+  pointer-events:none;
+}
+
+#inicio h1{
+  position:relative;
+  color:white;
+  font-size:40px; /* reducido más */
+  font-family:'Cinzel';
+  text-align:center;
+  margin-bottom:30px; /* ajustado para que quede espacio */
+  z-index:2;
+  animation:tituloSubir 1.5s ease forwards;
+}
+
+#inicio img{
+  width:300px; /* un poco más pequeño */
+  margin-bottom:30px;
+  position:relative;
+  z-index:2;
+  animation:logoAnim 2s infinite alternate;
+}
+
+#inicio button{
+  position:relative;
+  padding:15px 45px;
+  font-size:28px;
+  background:#1e88e5;
+  color:white;
+  border:none;
+  cursor:pointer;
+  border-radius:12px;
+  z-index:2;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+#inicio button:hover{
+  transform: scale(1.1) rotate(-2deg);
+  background:#1565c0;
+}
+
+/* ANIMACIONES INICIO */
+@keyframes logoAnim{
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes tituloSubir{
+  0% { transform: translateY(-20px); opacity:0; }
+  100% { transform: translateY(0); opacity:1; }
+}
+
+/* CONTENIDO */
+#contenido{
+  display:none;
+  width:100%;
+  height:100vh;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+}
+
+/* BOTONES */
+#reiniciar{
+  position:absolute;
+  top:20px;
+  right:20px;
+  padding:12px 25px;
+  font-size:18px;
+  border:none;
+  border-radius:10px;
+  background:#d62828;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 5px 15px rgba(0,0,0,0.4);
+}
+#reiniciar:hover{ transform:scale(1.05); }
+
+#modo3{
+  position:absolute;
+  top:20px;
+  left:20px;
+  padding:12px 25px;
+  font-size:18px;
+  border:none;
+  border-radius:10px;
+  background:#1e88e5;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 5px 15px rgba(0,0,0,0.4);
+}
+#modo3:hover{ transform:scale(1.05); }
+
+/* MESA */
+.mesa{
+  position:relative;
+  width:900px;
+  height:500px;
+  border-radius:50px;
+  border:18px solid #d4af37;
+  box-shadow:0 0 40px rgba(255,215,0,0.6),0 20px 60px rgba(0,0,0,0.7),inset 0 0 40px rgba(0,0,0,0.6);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background-image:url("xd2.jpg");
+  background-size:cover;
+  background-position:center;
+}
+
+.zona-cartas{position:relative;width:100%;height:100%;}
+
+/* CARTAS */
+.carta{
+  width:130px;
+  height:180px;
+  perspective:1000px;
+  cursor:pointer;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+  opacity:0;
+  transition: all 0.8s cubic-bezier(0.25, 1.5, 0.5, 1);
+}
+
+.carta-inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition: transform 0.8s;
+}
+
+.carta.volteada .carta-inner{
+  transform:rotateY(180deg);
+}
+
+.carta-frente,.carta-dorso{
+  position:absolute;
+  width:100%;
+  height:100%;
+  border-radius:12px;
+  backface-visibility:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:22px;
+  font-weight:bold;
+  text-align:center;
+  padding:10px;
+}
+
+.carta-dorso{
+  border:3px solid #999;
+}
+
+.carta-dorso img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:12px;
+}
+
+.carta-frente{
+  background:white;
+  transform:rotateY(180deg);
+  border:3px solid black;
+}
+
+</style>
+</head>
+<body>
+
+<div id="inicio">
+  <h1>Bienvenidos al<br>Juego de Azar de la Fragua</h1>
+  <img src="logo.png">
+  <button onclick="comenzar()">COMENZAR</button>
+</div>
+
+<div id="contenido">
+  <button id="modo3" onclick="modoTres()">3 CARTAS</button>
+  <button id="reiniciar" onclick="reiniciar()">REINICIAR</button>
+  <div class="mesa">
+    <div class="zona-cartas" id="zona"></div>
+  </div>
+</div>
+
+<script>
+let zona=document.getElementById("zona");
+let contadorReinicio=0;
+let modoEspecial=false;
+let indiceEspecial=0;
+let modo3activo=false;
+let indiceModo3=0;
+
+const materias=["Lenguaje","Sociales","Matemáticas","Biología","Religión","Filosofía"];
+const listaEspecial=["Matemáticas","Sociales","Biología","Religión","Lenguaje","Filosofía"];
+const secuencia3=[2,1,3];
+
+function comenzar(){
+  document.getElementById("inicio").style.transform="scale(1.2)";
+  document.getElementById("inicio").style.opacity="0";
+  setTimeout(()=>{
+    document.getElementById("inicio").style.display="none";
+    document.getElementById("contenido").style.display="flex";
+    repartirCartas();
+  },1000);
+}
+
+function reiniciar(){
+  contadorReinicio++;
+  zona.innerHTML="";
+  indiceEspecial=0;
+  modoEspecial = (contadorReinicio>=2);
+
+  if(modoEspecial){
+    crearCartas(listaEspecial.map(_=>null));
+    contadorReinicio=0;
+  } else {
+    let listaAleatoria=[...materias].sort(()=>Math.random()-0.5);
+    crearCartas(listaAleatoria);
+  }
+}
+
+function modoTres(){
+  modo3activo = !modo3activo;
+  zona.innerHTML="";
+  indiceModo3=0;
+
+  if(modo3activo){
+    crearCartas([null,null,null]);
+  } else {
+    repartirCartas();
+  }
+}
+
+function repartirCartas(){
+  let lista=[...materias].sort(()=>Math.random()-0.5);
+  crearCartas(lista);
+}
+
+function crearCartas(lista){
+  const cartas=[];
+  lista.forEach((texto,i)=>{
+    let carta=document.createElement("div");
+    carta.classList.add("carta");
+
+    let inner=document.createElement("div");
+    inner.classList.add("carta-inner");
+
+    let frente=document.createElement("div");
+    frente.classList.add("carta-frente");
+    frente.textContent = texto;
+
+    let dorso=document.createElement("div");
+    dorso.classList.add("carta-dorso");
+    let img=document.createElement("img");
+    img.src="xd.jpg";
+    dorso.appendChild(img);
+
+    inner.appendChild(frente);
+    inner.appendChild(dorso);
+    carta.appendChild(inner);
+    zona.appendChild(carta);
+
+    setTimeout(()=>{ carta.style.opacity=1; }, i*200);
+
+    carta.addEventListener("click",()=>{
+      carta.classList.toggle("volteada");
+
+      if(modoEspecial && !frente.textContent){
+        frente.textContent = listaEspecial[indiceEspecial];
+        indiceEspecial++;
+      }
+
+      if(modo3activo && !frente.textContent){
+        frente.textContent = secuencia3[indiceModo3];
+        indiceModo3++;
+      }
+    });
+
+    cartas.push(carta);
+  });
+
+  setTimeout(()=>{
+    const posiciones=[
+      {top:50,left:150,rot:-10},
+      {top:50,left:390,rot:0},
+      {top:50,left:630,rot:10},
+      {top:280,left:150,rot:10},
+      {top:280,left:390,rot:0},
+      {top:280,left:630,rot:-10}
+    ];
+
+    cartas.forEach((carta,i)=>{
+      let pos=posiciones[i] || posiciones[i-3];
+      carta.style.top=pos.top+"px";
+      carta.style.left=pos.left+"px";
+      carta.style.transform=`rotate(${pos.rot}deg)`;
+    });
+  },600);
+}
+</script>
+
+</body>
+</html>
